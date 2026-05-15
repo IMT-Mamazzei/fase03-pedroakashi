@@ -13,6 +13,7 @@ import java_cup.runtime.Symbol;
 %column
 
 %{
+
     private Symbol symbol(int type) {
         return new Symbol(type, yyline, yycolumn);
     }
@@ -20,17 +21,24 @@ import java_cup.runtime.Symbol;
     private Symbol symbol(int type, Object value) {
         return new Symbol(type, yyline, yycolumn, value);
     }
+
 %}
+
+/* ========================================================================= */
+/* MACROS */
+/* ========================================================================= */
 
 LineTerminator = \r|\n|\r\n
 WhiteSpace     = {LineTerminator} | [ \t\f]
 
-Number = [0-9]+(\.[0-9]+)?([Ee][+-]?[0-9]+)?
-
 Letter = [a-zA-Z]
 Digit  = [0-9]
 
+Number = [0-9]+(\.[0-9]+)?([Ee][+-]?[0-9]+)?
+
 Identifier = {Letter}({Letter}|{Digit}|_){0,31}
+
+OversizedIdentifier = {Letter}({Letter}|{Digit}|_){32,}
 
 %%
 
@@ -38,10 +46,14 @@ Identifier = {Letter}({Letter}|{Digit}|_){0,31}
 
     {WhiteSpace}    { }
 
+    /* Palavras reservadas */
+
     "if"            { return symbol(sym.IF); }
     "then"          { return symbol(sym.THEN); }
     "else"          { return symbol(sym.ELSE); }
     "while"         { return symbol(sym.WHILE); }
+
+    /* Pontuação */
 
     "("             { return symbol(sym.LPAREN); }
     ")"             { return symbol(sym.RPAREN); }
@@ -49,27 +61,40 @@ Identifier = {Letter}({Letter}|{Digit}|_){0,31}
     "}"             { return symbol(sym.RBRACE); }
     ";"             { return symbol(sym.SEMI); }
 
+    /* Operadores relacionais */
+
     "=="            { return symbol(sym.REL_OP, yytext()); }
-    "="             { return symbol(sym.ASSIGN); }
     "!="            { return symbol(sym.REL_OP, yytext()); }
     "<="            { return symbol(sym.REL_OP, yytext()); }
     ">="            { return symbol(sym.REL_OP, yytext()); }
     "<"             { return symbol(sym.REL_OP, yytext()); }
     ">"             { return symbol(sym.REL_OP, yytext()); }
 
+    /* Atribuição */
+
+    "="             { return symbol(sym.ASSIGN); }
+
+    /* Operadores matemáticos */
+
     "+" | "-"       { return symbol(sym.ADD_OP, yytext()); }
 
     "*" | "/" | "%" { return symbol(sym.MUL_OP, yytext()); }
+
+    /* Identificadores e números */
 
     {Identifier}    { return symbol(sym.ID, yytext()); }
 
     {Number}        { return symbol(sym.NUMBER, yytext()); }
 
-    {Letter}({Letter}|{Digit}|_){32} {
+    /* Erro de identificador gigante */
+
+    {OversizedIdentifier} {
         throw new RuntimeException(
             "Erro Léxico: Identificador ultrapassou 32 caracteres -> " + yytext()
         );
     }
+
+    /* Caractere inválido */
 
     . {
         throw new RuntimeException(
@@ -77,6 +102,8 @@ Identifier = {Letter}({Letter}|{Digit}|_){0,31}
         );
     }
 }
+
+/* EOF */
 
 <<EOF>> {
     return symbol(sym.EOF);
