@@ -1,0 +1,82 @@
+package br.maua.cic303;
+
+import java_cup.runtime.*;
+
+parser code {:
+// Método chamado pelo CUP quando encontra um erro sintático
+public void syntax_error(Symbol cur_token) {
+      throw new RuntimeException("Erro Sintático na linha " + cur_token.left + ", coluna " + cur_token.right);
+}
+:};
+
+/* ========================================================================= */
+/* TOKENS (TERMINAIS) — os nomes geram constantes em sym.java */
+/* ========================================================================= */
+terminal IF, THEN, ELSE, WHILE;
+terminal ASSIGN, LPAREN, RPAREN, LBRACE, RBRACE, SEMI;
+terminal String ID, NUMBER;
+terminal String ADD_OP, MUL_OP, REL_OP;
+
+/* ========================================================================= */
+/* NÃO-TERMINAIS */
+/* ========================================================================= */
+non terminal program, stmt_list, stmt;
+non terminal assign_stmt, if_stmt, while_stmt, block_stmt, null_stmt;
+non terminal expr;
+
+/* ========================================================================= */
+/* PRECEDÊNCIA (do MENOR para o MAIOR — o último é o mais "agarrado") */
+/* ========================================================================= */
+
+/* Dangling else: IF-sem-ELSE tem precedência menor que ELSE, */
+/* então o parser dá SHIFT quando vê ELSE (vincula ao if mais próximo). */
+precedence nonassoc LOWER_THAN_ELSE;
+precedence nonassoc ELSE;
+
+/* Relacional < soma < multiplicação. Todos associativos à esquerda. */
+precedence left REL_OP;
+precedence left ADD_OP;
+precedence left MUL_OP;
+
+/* ========================================================================= */
+/* GRAMÁTICA */
+/* ========================================================================= */
+start with program;
+
+program ::= stmt_list ;
+
+/* Recursão à ESQUERDA (LALR bottom-up — pilha não estoura) */
+stmt_list ::= stmt_list stmt
+| stmt
+  ;
+
+stmt ::= assign_stmt
+  | if_stmt
+  | while_stmt
+  | block_stmt
+  | null_stmt
+  ;
+
+assign_stmt ::= ID ASSIGN expr SEMI ;
+
+if_stmt ::= IF LPAREN expr RPAREN THEN block_stmt %prec LOWER_THAN_ELSE
+  | IF LPAREN expr RPAREN THEN block_stmt ELSE block_stmt
+;
+
+while_stmt ::= WHILE LPAREN expr RPAREN block_stmt ;
+
+/* Bloco vazio é permitido (test05 testa "{ ; }" e "{ ; ; ; }", */
+/* mas deixo a regra LBRACE RBRACE também por segurança). */
+block_stmt ::= LBRACE stmt_list RBRACE
+  | LBRACE RBRACE
+  ;
+
+null_stmt ::= SEMI ;
+
+expr ::= expr MUL_OP expr
+| expr ADD_OP expr
+| expr REL_OP expr
+| LPAREN expr RPAREN
+  | NUMBER
+  | ID
+  ;
