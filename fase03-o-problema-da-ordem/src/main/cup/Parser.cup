@@ -5,78 +5,117 @@ import java_cup.runtime.*;
 parser code {:
     // Método chamado pelo CUP quando encontra um erro sintático
     public void syntax_error(Symbol cur_token) {
-        throw new RuntimeException("Erro Sintático na linha " + cur_token.left + ", coluna " + cur_token.right);
+        throw new RuntimeException(
+            "Erro Sintático na linha " +
+            cur_token.left +
+            ", coluna " +
+            cur_token.right
+        );
     }
-:};
+:}
 
 /* ========================================================================= */
-/* TOKENS (TERMINAIS) — os nomes geram constantes em sym.java                */
+/* DECLARAÇÃO DOS TOKENS (TERMINAIS)                                         */
 /* ========================================================================= */
+
 terminal IF, THEN, ELSE, WHILE;
 terminal ASSIGN, LPAREN, RPAREN, LBRACE, RBRACE, SEMI;
+
 terminal String ID, NUMBER;
 terminal String ADD_OP, MUL_OP, REL_OP;
 
 /* ========================================================================= */
-/* NÃO-TERMINAIS                                                             */
+/* DECLARAÇÃO DOS NÃO-TERMINAIS                                              */
 /* ========================================================================= */
+
 non terminal program, stmt_list, stmt;
 non terminal assign_stmt, if_stmt, while_stmt, block_stmt, null_stmt;
 non terminal expr;
 
 /* ========================================================================= */
-/* PRECEDÊNCIA (do MENOR para o MAIOR — o último é o mais "agarrado")        */
+/* PRECEDÊNCIA E ASSOCIATIVIDADE                                             */
 /* ========================================================================= */
 
-/* Dangling else: IF-sem-ELSE tem precedência menor que ELSE,                */
-/* então o parser dá SHIFT quando vê ELSE (vincula ao if mais próximo).      */
-precedence nonassoc LOWER_THAN_ELSE;
-precedence nonassoc ELSE;
-
-/* Relacional < soma < multiplicação. Todos associativos à esquerda.         */
+/* menor precedência */
 precedence left REL_OP;
+
+/* média precedência */
 precedence left ADD_OP;
+
+/* maior precedência */
 precedence left MUL_OP;
 
+precedence right ELSE;
+
 /* ========================================================================= */
-/* GRAMÁTICA                                                                 */
+/* REGRAS DA GRAMÁTICA                                                       */
 /* ========================================================================= */
+
 start with program;
 
-program ::= stmt_list ;
+/* programa = lista de comandos */
 
-/* Recursão à ESQUERDA (LALR bottom-up — pilha não estoura) */
-stmt_list ::= stmt_list stmt
-            | stmt
-            ;
+program ::=
+    stmt_list
+;
 
-stmt ::= assign_stmt
-       | if_stmt
-       | while_stmt
-       | block_stmt
-       | null_stmt
-       ;
+/* lista recursiva de comandos */
 
-assign_stmt ::= ID ASSIGN expr SEMI ;
+stmt_list ::=
+      stmt_list stmt
+    | stmt
+;
 
-if_stmt ::= IF LPAREN expr RPAREN THEN block_stmt                    %prec LOWER_THAN_ELSE
-          | IF LPAREN expr RPAREN THEN block_stmt ELSE block_stmt
-          ;
+/* comandos possíveis */
 
-while_stmt ::= WHILE LPAREN expr RPAREN block_stmt ;
+stmt ::=
+      assign_stmt
+    | if_stmt
+    | while_stmt
+    | block_stmt
+    | null_stmt
+;
 
-/* Bloco vazio é permitido (test05 testa "{ ; }" e "{ ; ; ; }",              */
-/* mas deixo a regra LBRACE RBRACE também por segurança).                    */
-block_stmt ::= LBRACE stmt_list RBRACE
-             | LBRACE RBRACE
-             ;
+/* atribuição */
 
-null_stmt ::= SEMI ;
+assign_stmt ::=
+    ID ASSIGN expr SEMI
+;
 
-expr ::= expr MUL_OP expr
-       | expr ADD_OP expr
-       | expr REL_OP expr
-       | LPAREN expr RPAREN
-       | NUMBER
-       | ID
-       ;
+/* IF */
+
+if_stmt ::=
+      IF LPAREN expr RPAREN THEN block_stmt
+    | IF LPAREN expr RPAREN THEN block_stmt ELSE block_stmt
+;
+
+/* WHILE */
+
+while_stmt ::=
+    WHILE LPAREN expr RPAREN block_stmt
+;
+
+/* BLOCO */
+
+block_stmt ::=
+    LBRACE stmt_list RBRACE
+;
+
+/* comando nulo */
+
+null_stmt ::=
+    SEMI
+;
+
+/* EXPRESSÕES */
+
+expr ::=
+      expr ADD_OP expr
+    | expr MUL_OP expr
+    | expr REL_OP expr
+
+    | LPAREN expr RPAREN
+
+    | NUMBER
+    | ID
+;
