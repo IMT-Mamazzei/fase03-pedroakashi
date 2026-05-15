@@ -7,11 +7,10 @@ parser code {:
     public void syntax_error(Symbol cur_token) {
         throw new RuntimeException("Erro Sintático na linha " + cur_token.left + ", coluna " + cur_token.right);
     }
-:}
+:};
 
 /* ========================================================================= */
-/* DECLARAÇÃO DOS TOKENS (TERMINAIS)                                         */
-/* O CUP usará isso para gerar o sym.java que o seu Lexer precisa            */
+/* TOKENS (TERMINAIS) — os nomes geram constantes em sym.java                */
 /* ========================================================================= */
 terminal IF, THEN, ELSE, WHILE;
 terminal ASSIGN, LPAREN, RPAREN, LBRACE, RBRACE, SEMI;
@@ -19,43 +18,38 @@ terminal String ID, NUMBER;
 terminal String ADD_OP, MUL_OP, REL_OP;
 
 /* ========================================================================= */
-/* DECLARAÇÃO DOS NÃO-TERMINAIS (VARIÁVEIS DA GRAMÁTICA)                     */
+/* NÃO-TERMINAIS                                                             */
 /* ========================================================================= */
 non terminal program, stmt_list, stmt;
 non terminal assign_stmt, if_stmt, while_stmt, block_stmt, null_stmt;
 non terminal expr;
 
 /* ========================================================================= */
-/* PRECEDÊNCIA E ASSOCIATIVIDADE                                             */
-/* (declarado do MENOR para o MAIOR — o último é o mais "agarrado")          */
+/* PRECEDÊNCIA (do MENOR para o MAIOR — o último é o mais "agarrado")        */
 /* ========================================================================= */
 
-/* Truque do "dangling else": IF-sem-ELSE recebe precedência menor que ELSE, */
-/* então quando o parser vê ELSE na entrada ele faz SHIFT (vincula ao if     */
-/* mais próximo) em vez de reduzir. Resolve o shift/reduce silenciosamente.  */
+/* Dangling else: IF-sem-ELSE tem precedência menor que ELSE,                */
+/* então o parser dá SHIFT quando vê ELSE (vincula ao if mais próximo).      */
 precedence nonassoc LOWER_THAN_ELSE;
 precedence nonassoc ELSE;
 
-/* Relacional < aritmético; soma < multiplicação; todos associativos à esq. */
+/* Relacional < soma < multiplicação. Todos associativos à esquerda.         */
 precedence left REL_OP;
 precedence left ADD_OP;
 precedence left MUL_OP;
 
 /* ========================================================================= */
-/* REGRAS DA GRAMÁTICA                                                       */
+/* GRAMÁTICA                                                                 */
 /* ========================================================================= */
 start with program;
 
-/* Um programa é simplesmente uma lista de comandos. */
 program ::= stmt_list ;
 
-/* Lista por RECURSÃO À ESQUERDA — equivalente ao { comando } do EBNF.       */
-/* Esquerda (e não direita) porque LALR é bottom-up: a pilha não estoura.    */
+/* Recursão à ESQUERDA (LALR bottom-up — pilha não estoura) */
 stmt_list ::= stmt_list stmt
             | stmt
             ;
 
-/* Um comando é uma das cinco formas previstas no enunciado. */
 stmt ::= assign_stmt
        | if_stmt
        | while_stmt
@@ -65,24 +59,20 @@ stmt ::= assign_stmt
 
 assign_stmt ::= ID ASSIGN expr SEMI ;
 
-/* O %prec força a 1ª produção a herdar a precedência LOWER_THAN_ELSE,       */
-/* que é menor que a do terminal ELSE → o parser dá shift quando vê ELSE.    */
 if_stmt ::= IF LPAREN expr RPAREN THEN block_stmt                    %prec LOWER_THAN_ELSE
           | IF LPAREN expr RPAREN THEN block_stmt ELSE block_stmt
           ;
 
 while_stmt ::= WHILE LPAREN expr RPAREN block_stmt ;
 
-/* Bloco pode ser vazio ({}) ou conter uma lista de comandos. */
+/* Bloco vazio é permitido (test05 testa "{ ; }" e "{ ; ; ; }",              */
+/* mas deixo a regra LBRACE RBRACE também por segurança).                    */
 block_stmt ::= LBRACE stmt_list RBRACE
              | LBRACE RBRACE
              ;
 
 null_stmt ::= SEMI ;
 
-/* A precedência declarada acima é o que resolve a ambiguidade desta         */
-/* gramática "ingenuamente ambígua" (expr OP expr). Sem ela, o CUP daria     */
-/* vários Shift/Reduce conflicts.                                            */
 expr ::= expr MUL_OP expr
        | expr ADD_OP expr
        | expr REL_OP expr
