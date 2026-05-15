@@ -1,24 +1,24 @@
 package br.maua.cic303;
+
+import java_cup.runtime.*;
+
 %%
 %class Lexer
 %public
 %unicode
-%type Token
+%implements java_cup.runtime.Scanner
+%type java_cup.runtime.Symbol
+%function next_token
 %line
 %column
-%{
-    private Token token(Tag tag, String lexeme) {
-        return new Token(tag, lexeme);
-    }
-%}
 
 /* ================= MACROS ================= */
 
 LineTerminator = \r|\n|\r\n
-WhiteSpace     = {LineTerminator} | [ \t\f]
+WhiteSpace = {LineTerminator} | [ \t\f]
 
 Letter = [a-zA-Z]
-Digit  = [0-9]
+Digit = [0-9]
 
 Number = [0-9]+(\.[0-9]+)?([Ee][+-]?[0-9]+)?
 
@@ -33,50 +33,48 @@ Identifier = {Letter}({Letter}|{Digit}|_){0,31}
     {WhiteSpace}    { }
 
     /* ===== PALAVRAS RESERVADAS ===== */
-    "if"            { return token(Tag.IF, yytext()); }
-    "then"          { return token(Tag.THEN, yytext()); }
-    "else"          { return token(Tag.ELSE, yytext()); }
-    "while"         { return token(Tag.WHILE, yytext()); }
+    "if"    { return new Symbol(sym.IF, yyline, yycolumn, yytext()); }
+    "then"  { return new Symbol(sym.THEN, yyline, yycolumn, yytext()); }
+    "else"  { return new Symbol(sym.ELSE, yyline, yycolumn, yytext()); }
+    "while" { return new Symbol(sym.WHILE, yyline, yycolumn, yytext()); }
 
     /* ===== PONTUAÇÃO ===== */
-    "("             { return token(Tag.LPAREN, yytext()); }
-    ")"             { return token(Tag.RPAREN, yytext()); }
-    "{"             { return token(Tag.LBRACE, yytext()); }
-    "}"             { return token(Tag.RBRACE, yytext()); }
-    ";"             { return token(Tag.SEMI, yytext()); }
+    "("  { return new Symbol(sym.LPAREN, yyline, yycolumn, yytext()); }
+    ")"  { return new Symbol(sym.RPAREN, yyline, yycolumn, yytext()); }
+    "{"  { return new Symbol(sym.LBRACE, yyline, yycolumn, yytext()); }
+    "}"  { return new Symbol(sym.RBRACE, yyline, yycolumn, yytext()); }
+    ";"  { return new Symbol(sym.SEMI, yyline, yycolumn, yytext()); }
 
     /* ===== OPERADORES RELACIONAIS (ORDEM IMPORTANTE) ===== */
-    "=="            { return token(Tag.REL_OP, yytext()); }
-    "!="            { return token(Tag.REL_OP, yytext()); }
-    "<="            { return token(Tag.REL_OP, yytext()); }
-    ">="            { return token(Tag.REL_OP, yytext()); }
-    "<"             { return token(Tag.REL_OP, yytext()); }
-    ">"             { return token(Tag.REL_OP, yytext()); }
+    "==" { return new Symbol(sym.REL_OP, yyline, yycolumn, yytext()); }
+    "!=" { return new Symbol(sym.REL_OP, yyline, yycolumn, yytext()); }
+    "<=" { return new Symbol(sym.REL_OP, yyline, yycolumn, yytext()); }
+    ">=" { return new Symbol(sym.REL_OP, yyline, yycolumn, yytext()); }
+    "<"  { return new Symbol(sym.REL_OP, yyline, yycolumn, yytext()); }
+    ">"  { return new Symbol(sym.REL_OP, yyline, yycolumn, yytext()); }
 
     /* ===== ATRIBUIÇÃO ===== */
-    "="             { return token(Tag.ASSIGN, yytext()); }
+    "="  { return new Symbol(sym.ASSIGN, yyline, yycolumn, yytext()); }
 
     /* ===== OPERADORES MATEMÁTICOS ===== */
-    "+" | "-"       { return token(Tag.ADD_OP, yytext()); }
-    "*" | "/" | "%" { return token(Tag.MUL_OP, yytext()); }
+    "+" | "-"       { return new Symbol(sym.ADD_OP, yyline, yycolumn, yytext()); }
+    "*" | "/" | "%" { return new Symbol(sym.MUL_OP, yyline, yycolumn, yytext()); }
 
     /* ===== IDENTIFICADORES ===== */
-    {Identifier}    { return token(Tag.ID, yytext()); }
+    {Identifier}    { return new Symbol(sym.ID, yyline, yycolumn, yytext()); }
 
     /* ===== NÚMEROS ===== */
-    {Number}        { return token(Tag.NUMBER, yytext()); }
+    {Number}        { return new Symbol(sym.NUMBER, yyline, yycolumn, yytext()); }
 
     /* ===== ERRO: MAIS DE 32 CARACTERES ===== */
     {Letter}({Letter}|{Digit}|_){32} {
-        return token(Tag.ERROR,
-        "Erro Léxico: Identificador ultrapassou 32 caracteres -> " + yytext());
+        throw new RuntimeException("Erro Léxico: Identificador ultrapassou 32 caracteres -> " + yytext());
     }
 
     /* ===== ERRO GENÉRICO ===== */
     . {
-        return token(Tag.ERROR,
-        "Erro Léxico: Caractere ilegal -> " + yytext());
+        throw new RuntimeException("Erro Léxico: Caractere ilegal -> " + yytext());
     }
 }
 
-<<EOF>> { return token(Tag.EOF, ""); }
+<<EOF>> { return new Symbol(sym.EOF, yyline, yycolumn); }
