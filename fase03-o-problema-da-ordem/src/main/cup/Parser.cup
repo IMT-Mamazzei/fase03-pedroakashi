@@ -3,96 +3,68 @@ package br.maua.cic303;
 import java_cup.runtime.*;
 
 parser code {:
-    // Método chamado pelo CUP quando encontra um erro sintático
     public void syntax_error(Symbol cur_token) {
-        throw new RuntimeException("Erro Sintático na linha " + cur_token.left + ", coluna " + cur_token.right);
+        throw new RuntimeException(
+            "Erro Sintático na linha " +
+            cur_token.left +
+            ", coluna " +
+            cur_token.right
+        );
     }
 :}
-
-/* ========================================================================= */
-/* DECLARAÇÃO DOS TOKENS (TERMINAIS)                                         */
-/* ========================================================================= */
 
 terminal IF, THEN, ELSE, WHILE;
 terminal ASSIGN, LPAREN, RPAREN, LBRACE, RBRACE, SEMI;
 terminal String ID, NUMBER;
 terminal String ADD_OP, MUL_OP, REL_OP;
 
-/* ========================================================================= */
-/* DECLARAÇÃO DOS NÃO-TERMINAIS                                              */
-/* ========================================================================= */
-
 non terminal program, stmt_list, stmt;
 non terminal assign_stmt, if_stmt, while_stmt, block_stmt, null_stmt;
 non terminal expr;
 
-/* ========================================================================= */
-/* PRECEDÊNCIA E ASSOCIATIVIDADE                                             */
-/* ========================================================================= */
-
-/* TODO 1 */
+precedence nonassoc ELSE;
+precedence nonassoc THEN;
 
 precedence left REL_OP;
 precedence left ADD_OP;
 precedence left MUL_OP;
-precedence right ELSE;
-
-/* ========================================================================= */
-/* REGRAS DA GRAMÁTICA                                                       */
-/* ========================================================================= */
 
 start with program;
 
-/* TODO 2 */
+program ::= stmt_list
+          ;
 
-program ::= stmt_list ;
+stmt_list ::= stmt_list stmt
+            |
+            ;
 
-/* TODO 3 */
+stmt ::= assign_stmt
+       | if_stmt
+       | while_stmt
+       | block_stmt
+       | null_stmt
+       ;
 
-stmt_list ::=
-      stmt_list stmt
-    | stmt
-;
+assign_stmt ::= ID ASSIGN expr SEMI
+              ;
 
-/* TODO 4 */
+if_stmt ::= IF LPAREN expr RPAREN THEN block_stmt %prec THEN
+          | IF LPAREN expr RPAREN THEN block_stmt ELSE block_stmt
+          ;
 
-stmt ::=
-      assign_stmt
-    | if_stmt
-    | while_stmt
-    | block_stmt
-    | null_stmt
-;
+while_stmt ::= WHILE LPAREN expr RPAREN block_stmt
+             ;
 
-assign_stmt ::= ID ASSIGN expr SEMI ;
+block_stmt ::= LBRACE stmt_list RBRACE
+             ;
 
-/* TODO 5 */
+null_stmt ::= SEMI
+            ;
 
-if_stmt ::=
-      IF LPAREN expr RPAREN THEN block_stmt
-    | IF LPAREN expr RPAREN THEN block_stmt ELSE block_stmt
-;
-
-while_stmt ::=
-    WHILE LPAREN expr RPAREN block_stmt
-;
-
-block_stmt ::=
-      LBRACE stmt_list RBRACE
-    | LBRACE RBRACE
-;
-
-null_stmt ::=
-    SEMI
-;
-
-/* TODO 6 */
-
-expr ::=
-      expr ADD_OP expr
-    | expr MUL_OP expr
-    | expr REL_OP expr
-    | LPAREN expr RPAREN
-    | NUMBER
-    | ID
-;
+expr ::= expr ADD_OP expr
+       | expr MUL_OP expr
+       | expr REL_OP expr
+       | LPAREN expr RPAREN
+       | NUMBER
+       | ID
+       ;
