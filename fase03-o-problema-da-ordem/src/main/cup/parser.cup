@@ -5,7 +5,8 @@ import java_cup.runtime.*;
 parser code {:
     // Método chamado pelo CUP quando encontra um erro sintático
     public void syntax_error(Symbol cur_token) {
-        throw new CompilerException("Erro Sintático na linha " + cur_token.left + ", coluna " + cur_token.right);
+        // Trocado de CompilerException para RuntimeException
+        throw new RuntimeException("Erro Sintático na linha " + cur_token.left + ", coluna " + cur_token.right);
     }
 :}
 
@@ -30,14 +31,12 @@ non terminal expr;
 /* PRECEDÊNCIA E ASSOCIATIVIDADE                                             */
 /* ========================================================================= */
 
-/* Resolve o "Dangling Else" associando o ELSE ao IF mais próximo */
 precedence nonassoc THEN;
 precedence nonassoc ELSE;
 
-/* Precedência matemática (o que está mais embaixo tem maior prioridade) */
-precedence left REL_OP; /* Operadores relacionais (==, !=, >, <, etc) */
-precedence left ADD_OP; /* Soma e Subtração */
-precedence left MUL_OP; /* Multiplicação, Divisão e Resto */
+precedence left REL_OP; 
+precedence left ADD_OP; 
+precedence left MUL_OP; 
 
 /* ========================================================================= */
 /* REGRAS DA GRAMÁTICA                                                       */
@@ -45,39 +44,30 @@ precedence left MUL_OP; /* Multiplicação, Divisão e Resto */
 
 start with program;
 
-/* Um programa é uma lista de comandos ou pode ser vazio */
 program ::= stmt_list 
           | /* programa vazio é aceito */ ;
 
-/* Lista recursiva de comandos (EBNF convertido para BNF) */
 stmt_list ::= stmt_list stmt 
             | stmt ;
 
-/* Declaração dos comandos disponíveis */
 stmt ::= assign_stmt 
        | if_stmt 
        | while_stmt 
        | block_stmt 
        | null_stmt ;
 
-/* Atribuição */
 assign_stmt ::= ID ASSIGN expr SEMI ;
 
-/* Estrutura IF/ELSE */
 if_stmt ::= IF LPAREN expr RPAREN THEN block_stmt
           | IF LPAREN expr RPAREN THEN block_stmt ELSE block_stmt ;
 
-/* Estrutura WHILE */
 while_stmt ::= WHILE LPAREN expr RPAREN block_stmt ;
 
-/* Bloco de comandos */
 block_stmt ::= LBRACE stmt_list RBRACE 
-             | LBRACE RBRACE ; /* Permite blocos vazios {} */
+             | LBRACE RBRACE ; 
 
-/* Comando nulo */
 null_stmt ::= SEMI ;
 
-/* Expressões (aritmética, relacional, etc) */
 expr ::= expr ADD_OP expr
        | expr MUL_OP expr
        | expr REL_OP expr
