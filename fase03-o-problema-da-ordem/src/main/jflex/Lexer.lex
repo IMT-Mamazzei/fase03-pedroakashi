@@ -13,7 +13,6 @@ import java_cup.runtime.Symbol;
 %column
 
 %{
-
     private Symbol symbol(int type) {
         return new Symbol(type, yyline, yycolumn);
     }
@@ -21,7 +20,6 @@ import java_cup.runtime.Symbol;
     private Symbol symbol(int type, Object value) {
         return new Symbol(type, yyline, yycolumn, value);
     }
-
 %}
 
 /* ========================================================================= */
@@ -31,15 +29,14 @@ import java_cup.runtime.Symbol;
 LineTerminator = \r|\n|\r\n
 WhiteSpace     = {LineTerminator} | [ \t\f]
 
+/* Macros de Comentário */
+LineComment  = "//" [^\r\n]*
+BlockComment = "/*" ~"*/"
+
 Letter = [a-zA-Z]
 Digit  = [0-9]
 
-/* Aceita:
-   7
-   3.14
-   6.02E23
-   6.62e-34
-*/
+/* Aceita: 7, 3.14, 6.02E23, 6.62e-34 */
 Number = [0-9]+(\.[0-9]+)?([Ee][+-]?[0-9]+)?
 
 /* Máximo 32 caracteres */
@@ -52,8 +49,10 @@ OversizedIdentifier = {Letter}({Letter}|{Digit}|_){32,}
 
 <YYINITIAL> {
 
-    /* Ignora espaços */
-    {WhiteSpace} { }
+    /* Ignora espaços e comentários */
+    {WhiteSpace}   { }
+    {LineComment}  { }
+    {BlockComment} { }
 
     /* ================================================================ */
     /* PALAVRAS RESERVADAS */
@@ -78,15 +77,12 @@ OversizedIdentifier = {Letter}({Letter}|{Digit}|_){32,}
 
     /* ================================================================ */
     /* OPERADORES RELACIONAIS */
-    /* IMPORTANTE: operadores duplos primeiro */
     /* ================================================================ */
 
     "=="        { return symbol(sym.REL_OP, yytext()); }
     "!="        { return symbol(sym.REL_OP, yytext()); }
-
     "<="        { return symbol(sym.REL_OP, yytext()); }
     ">="        { return symbol(sym.REL_OP, yytext()); }
-
     "<"         { return symbol(sym.REL_OP, yytext()); }
     ">"         { return symbol(sym.REL_OP, yytext()); }
 
@@ -123,9 +119,8 @@ OversizedIdentifier = {Letter}({Letter}|{Digit}|_){32,}
     /* ================================================================ */
 
     {OversizedIdentifier} {
-        throw new RuntimeException(
-            "Erro Léxico: Identificador ultrapassou 32 caracteres -> " +
-            yytext()
+        throw new CompilerException(
+            "Erro Léxico: Identificador ultrapassou 32 caracteres -> " + yytext()
         );
     }
 
@@ -134,9 +129,8 @@ OversizedIdentifier = {Letter}({Letter}|{Digit}|_){32,}
     /* ================================================================ */
 
     . {
-        throw new RuntimeException(
-            "Erro Léxico: Caractere ilegal -> " +
-            yytext()
+        throw new CompilerException(
+            "Erro Léxico: Caractere ilegal -> " + yytext()
         );
     }
 }
