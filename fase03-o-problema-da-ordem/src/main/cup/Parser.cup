@@ -15,58 +15,63 @@ parser code {:
 :}
 
 /* ========================================================================= */
-/* DECLARAÇÃO DOS TOKENS (TERMINAIS)                                         */
+/* TERMINAIS                                                                 */
 /* ========================================================================= */
 
 terminal IF, THEN, ELSE, WHILE;
 terminal ASSIGN, LPAREN, RPAREN, LBRACE, RBRACE, SEMI;
 
-terminal String ID, NUMBER;
-terminal String ADD_OP, MUL_OP, REL_OP;
+terminal String ID;
+terminal String NUMBER;
+
+terminal String ADD_OP;
+terminal String MUL_OP;
+terminal String REL_OP;
 
 /* ========================================================================= */
-/* DECLARAÇÃO DOS NÃO-TERMINAIS                                              */
+/* NÃO TERMINAIS                                                             */
 /* ========================================================================= */
 
-non terminal program, stmt_list, stmt;
-non terminal assign_stmt, if_stmt, while_stmt, block_stmt, null_stmt;
+non terminal program;
+non terminal stmt_list;
+non terminal stmt;
+
+non terminal assign_stmt;
+non terminal if_stmt;
+non terminal while_stmt;
+non terminal block_stmt;
+non terminal null_stmt;
+
 non terminal expr;
 
 /* ========================================================================= */
-/* PRECEDÊNCIA E ASSOCIATIVIDADE                                             */
+/* PRECEDÊNCIA                                                               */
 /* ========================================================================= */
 
-/* menor precedência */
 precedence left REL_OP;
-
-/* média precedência */
 precedence left ADD_OP;
-
-/* maior precedência */
 precedence left MUL_OP;
 
 precedence right ELSE;
 
 /* ========================================================================= */
-/* REGRAS DA GRAMÁTICA                                                       */
+/* INÍCIO                                                                     */
 /* ========================================================================= */
 
 start with program;
 
-/* programa = lista de comandos */
+/* ========================================================================= */
+/* REGRAS                                                                     */
+/* ========================================================================= */
 
 program ::=
     stmt_list
 ;
 
-/* lista recursiva de comandos */
-
 stmt_list ::=
       stmt_list stmt
     | stmt
 ;
-
-/* comandos possíveis */
 
 stmt ::=
       assign_stmt
@@ -76,38 +81,27 @@ stmt ::=
     | null_stmt
 ;
 
-/* atribuição */
-
 assign_stmt ::=
     ID ASSIGN expr SEMI
 ;
-
-/* IF */
 
 if_stmt ::=
       IF LPAREN expr RPAREN THEN block_stmt
     | IF LPAREN expr RPAREN THEN block_stmt ELSE block_stmt
 ;
 
-/* WHILE */
-
 while_stmt ::=
     WHILE LPAREN expr RPAREN block_stmt
 ;
 
-/* BLOCO */
-
 block_stmt ::=
-    LBRACE stmt_list RBRACE
+      LBRACE stmt_list RBRACE
+    | LBRACE RBRACE
 ;
-
-/* comando nulo */
 
 null_stmt ::=
     SEMI
 ;
-
-/* EXPRESSÕES */
 
 expr ::=
       expr ADD_OP expr
