@@ -13,7 +13,6 @@ parser code {:
 /* DECLARAÇÃO DOS TOKENS (TERMINAIS)                                         */
 /* O CUP usará isso para gerar o sym.java que o seu Lexer precisa            */
 /* ========================================================================= */
-
 terminal IF, THEN, ELSE, WHILE;
 terminal ASSIGN, LPAREN, RPAREN, LBRACE, RBRACE, SEMI;
 terminal String ID, NUMBER;
@@ -22,40 +21,72 @@ terminal String ADD_OP, MUL_OP, REL_OP;
 /* ========================================================================= */
 /* DECLARAÇÃO DOS NÃO-TERMINAIS (VARIÁVEIS DA GRAMÁTICA)                     */
 /* ========================================================================= */
-
 non terminal program, stmt_list, stmt;
 non terminal assign_stmt, if_stmt, while_stmt, block_stmt, null_stmt;
 non terminal expr;
 
 /* ========================================================================= */
 /* PRECEDÊNCIA E ASSOCIATIVIDADE                                             */
+/* (declarado do MENOR para o MAIOR — o último é o mais "agarrado")          */
 /* ========================================================================= */
 
-/* TODO 1: Declare a precedência para resolver a ambiguidade matemática. */
-/* Dica: O operador mais embaixo tem a MAIOR precedência!                */
-/* precedence left ... ; */
+/* Truque do "dangling else": IF-sem-ELSE recebe precedência menor que ELSE, */
+/* então quando o parser vê ELSE na entrada ele faz SHIFT (vincula ao if     */
+/* mais próximo) em vez de reduzir. Resolve o shift/reduce silenciosamente.  */
+precedence nonassoc LOWER_THAN_ELSE;
+precedence nonassoc ELSE;
+
+/* Relacional < aritmético; soma < multiplicação; todos associativos à esq. */
+precedence left REL_OP;
+precedence left ADD_OP;
+precedence left MUL_OP;
 
 /* ========================================================================= */
 /* REGRAS DA GRAMÁTICA                                                       */
 /* ========================================================================= */
-
 start with program;
 
-/* TODO 2: Como definir um programa que é uma lista de comandos? */
-program ::= /* Escreva a regra aqui */ ;
+/* Um programa é simplesmente uma lista de comandos. */
+program ::= stmt_list ;
 
-/* TODO 3: Como definir uma lista recursiva no BNF? */
-stmt_list ::= /* Escreva a regra aqui */ ;
+/* Lista por RECURSÃO À ESQUERDA — equivalente ao { comando } do EBNF.       */
+/* Esquerda (e não direita) porque LALR é bottom-up: a pilha não estoura.    */
+stmt_list ::= stmt_list stmt
+            | stmt
+            ;
 
-/* TODO 4: Declaração dos comandos (assign, if, while, block, null) */
-stmt ::= /* Escreva a regra aqui */ ;
+/* Um comando é uma das cinco formas previstas no enunciado. */
+stmt ::= assign_stmt
+       | if_stmt
+       | while_stmt
+       | block_stmt
+       | null_stmt
+       ;
 
 assign_stmt ::= ID ASSIGN expr SEMI ;
 
-/* TODO 5: Implemente o IF, WHILE, BLOCO e NULL */
-/* if_stmt ::= ... */
+/* O %prec força a 1ª produção a herdar a precedência LOWER_THAN_ELSE,       */
+/* que é menor que a do terminal ELSE → o parser dá shift quando vê ELSE.    */
+if_stmt ::= IF LPAREN expr RPAREN THEN block_stmt                    %prec LOWER_THAN_ELSE
+          | IF LPAREN expr RPAREN THEN block_stmt ELSE block_stmt
+          ;
 
-/* TODO 6: Regras de expressões (aritmética, relacional, etc) */
-expr ::= expr ADD_OP expr
-       /* Adicione MUL_OP, REL_OP, parenteses, NUMBER e ID */
+while_stmt ::= WHILE LPAREN expr RPAREN block_stmt ;
+
+/* Bloco pode ser vazio ({}) ou conter uma lista de comandos. */
+block_stmt ::= LBRACE stmt_list RBRACE
+             | LBRACE RBRACE
+             ;
+
+null_stmt ::= SEMI ;
+
+/* A precedência declarada acima é o que resolve a ambiguidade desta         */
+/* gramática "ingenuamente ambígua" (expr OP expr). Sem ela, o CUP daria     */
+/* vários Shift/Reduce conflicts.                                            */
+expr ::= expr MUL_OP expr
+       | expr ADD_OP expr
+       | expr REL_OP expr
+       | LPAREN expr RPAREN
+       | NUMBER
+       | ID
        ;
