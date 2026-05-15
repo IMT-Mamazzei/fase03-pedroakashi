@@ -1,80 +1,83 @@
 package br.maua.cic303;
 
-import java_cup.runtime.*;
+import java_cup.runtime.Symbol;
 
 %%
+
 %class Lexer
 %public
 %unicode
-%implements java_cup.runtime.Scanner
+%cup
 %type java_cup.runtime.Symbol
-%function next_token
 %line
 %column
 
-/* ================= MACROS ================= */
+%{
+    private Symbol symbol(int type) {
+        return new Symbol(type, yyline, yycolumn);
+    }
+
+    private Symbol symbol(int type, Object value) {
+        return new Symbol(type, yyline, yycolumn, value);
+    }
+%}
 
 LineTerminator = \r|\n|\r\n
-WhiteSpace = {LineTerminator} | [ \t\f]
-
-Letter = [a-zA-Z]
-Digit = [0-9]
+WhiteSpace     = {LineTerminator} | [ \t\f]
 
 Number = [0-9]+(\.[0-9]+)?([Ee][+-]?[0-9]+)?
 
+Letter = [a-zA-Z]
+Digit  = [0-9]
+
 Identifier = {Letter}({Letter}|{Digit}|_){0,31}
 
-/* ================= REGRAS ================= */
-
 %%
+
 <YYINITIAL> {
 
-    /* Ignorar espaços */
     {WhiteSpace}    { }
 
-    /* ===== PALAVRAS RESERVADAS ===== */
-    "if"    { return new Symbol(sym.IF, yyline, yycolumn, yytext()); }
-    "then"  { return new Symbol(sym.THEN, yyline, yycolumn, yytext()); }
-    "else"  { return new Symbol(sym.ELSE, yyline, yycolumn, yytext()); }
-    "while" { return new Symbol(sym.WHILE, yyline, yycolumn, yytext()); }
+    "if"            { return symbol(sym.IF); }
+    "then"          { return symbol(sym.THEN); }
+    "else"          { return symbol(sym.ELSE); }
+    "while"         { return symbol(sym.WHILE); }
 
-    /* ===== PONTUAÇÃO ===== */
-    "("  { return new Symbol(sym.LPAREN, yyline, yycolumn, yytext()); }
-    ")"  { return new Symbol(sym.RPAREN, yyline, yycolumn, yytext()); }
-    "{"  { return new Symbol(sym.LBRACE, yyline, yycolumn, yytext()); }
-    "}"  { return new Symbol(sym.RBRACE, yyline, yycolumn, yytext()); }
-    ";"  { return new Symbol(sym.SEMI, yyline, yycolumn, yytext()); }
+    "("             { return symbol(sym.LPAREN); }
+    ")"             { return symbol(sym.RPAREN); }
+    "{"             { return symbol(sym.LBRACE); }
+    "}"             { return symbol(sym.RBRACE); }
+    ";"             { return symbol(sym.SEMI); }
 
-    /* ===== OPERADORES RELACIONAIS (ORDEM IMPORTANTE) ===== */
-    "==" { return new Symbol(sym.REL_OP, yyline, yycolumn, yytext()); }
-    "!=" { return new Symbol(sym.REL_OP, yyline, yycolumn, yytext()); }
-    "<=" { return new Symbol(sym.REL_OP, yyline, yycolumn, yytext()); }
-    ">=" { return new Symbol(sym.REL_OP, yyline, yycolumn, yytext()); }
-    "<"  { return new Symbol(sym.REL_OP, yyline, yycolumn, yytext()); }
-    ">"  { return new Symbol(sym.REL_OP, yyline, yycolumn, yytext()); }
+    "=="            { return symbol(sym.REL_OP, yytext()); }
+    "="             { return symbol(sym.ASSIGN); }
+    "!="            { return symbol(sym.REL_OP, yytext()); }
+    "<="            { return symbol(sym.REL_OP, yytext()); }
+    ">="            { return symbol(sym.REL_OP, yytext()); }
+    "<"             { return symbol(sym.REL_OP, yytext()); }
+    ">"             { return symbol(sym.REL_OP, yytext()); }
 
-    /* ===== ATRIBUIÇÃO ===== */
-    "="  { return new Symbol(sym.ASSIGN, yyline, yycolumn, yytext()); }
+    "+" | "-"       { return symbol(sym.ADD_OP, yytext()); }
 
-    /* ===== OPERADORES MATEMÁTICOS ===== */
-    "+" | "-"       { return new Symbol(sym.ADD_OP, yyline, yycolumn, yytext()); }
-    "*" | "/" | "%" { return new Symbol(sym.MUL_OP, yyline, yycolumn, yytext()); }
+    "*" | "/" | "%" { return symbol(sym.MUL_OP, yytext()); }
 
-    /* ===== IDENTIFICADORES ===== */
-    {Identifier}    { return new Symbol(sym.ID, yyline, yycolumn, yytext()); }
+    {Identifier}    { return symbol(sym.ID, yytext()); }
 
-    /* ===== NÚMEROS ===== */
-    {Number}        { return new Symbol(sym.NUMBER, yyline, yycolumn, yytext()); }
+    {Number}        { return symbol(sym.NUMBER, yytext()); }
 
-    /* ===== ERRO: MAIS DE 32 CARACTERES ===== */
     {Letter}({Letter}|{Digit}|_){32} {
-        throw new RuntimeException("Erro Léxico: Identificador ultrapassou 32 caracteres -> " + yytext());
+        throw new RuntimeException(
+            "Erro Léxico: Identificador ultrapassou 32 caracteres -> " + yytext()
+        );
     }
 
-    /* ===== ERRO GENÉRICO ===== */
     . {
-        throw new RuntimeException("Erro Léxico: Caractere ilegal -> " + yytext());
+        throw new RuntimeException(
+            "Erro Léxico: Caractere ilegal -> " + yytext()
+        );
     }
 }
 
-<<EOF>> { return new Symbol(sym.EOF, yyline, yycolumn); }
+<<EOF>> {
+    return symbol(sym.EOF);
+}
