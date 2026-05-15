@@ -66,14 +66,14 @@ Identifier = {Letter} ({Letter}|{Digit}|_)*
 
     {Identifier} {
         if (yytext().length() > 32) {
-            throw new CompilerException("Erro Lexico: Identificador ultrapassou 32 caracteres");
+            throw new RuntimeException("Erro Lexico: Identificador ultrapassou 32 caracteres");
         }
         return symbol(sym.ID, yytext());
     }
 
     {Number} { return symbol(sym.NUMBER, yytext()); }
 
-    . { throw new CompilerException("Erro Lexico: Caractere ilegal"); }
+    . { throw new RuntimeException("Erro Lexico: Caractere ilegal"); }
 
 }
 
